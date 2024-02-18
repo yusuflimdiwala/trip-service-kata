@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class TripServiceTest {
     public void initialize(){
 
         tripService = new TestableTripService();
+        loggedinUser = REGISTERD_USER;
     }
 
     @Test  public void
@@ -43,11 +45,13 @@ public class TripServiceTest {
     @Test public void
     should_not_return_any_trip_when_users_are_not_friends(){
 
-        loggedinUser = REGISTERD_USER;
 
-        User friend = new User();
-        friend.addFriend(ANOTHER_USER);
-        friend.addTrip(TO_BRAZIL);
+
+        User friend = UserBuilder.auser()
+                        .friendsWith(ANOTHER_USER)
+                        .withTrips(TO_BRAZIL)
+                        .build();
+
 
         List<Trip> friendTrips = tripService.getTripsByUser(friend);
 
@@ -57,19 +61,60 @@ public class TripServiceTest {
 
     @Test public void
     should_return_friend_trip_when_users_are_friends(){
-        loggedinUser = REGISTERD_USER;
 
-        User friend = new User();
-        friend.addFriend(ANOTHER_USER);
-        friend.addFriend(loggedinUser);
-        friend.addTrip(TO_BRAZIL);
-        friend.addTrip(TO_LONDON);
+        User friend = UserBuilder.auser()
+                        .friendsWith(ANOTHER_USER, loggedinUser)
+                        .withTrips(TO_BRAZIL,TO_LONDON)
+                        .build();
+
+
+
+
 
         List<Trip> friendTrips = tripService.getTripsByUser(friend);
 
         assertEquals( friendTrips.size() , 2 );
     }
 
+    public static class UserBuilder {
+
+        private User[] friends = new User[] {};
+        private Trip[] trips = new Trip[] {};
+
+        public static UserBuilder auser() {
+            return new UserBuilder();
+
+        }
+        public UserBuilder friendsWith(User... friends) {
+            this.friends = friends;
+            return this;
+        }
+
+        public UserBuilder withTrips(Trip... trips) {
+            this.trips = trips;
+            return this;
+        }
+
+        public User build() {
+            User user = new User();
+            addTripsTo(user);
+            addFriendsTo(user);
+            return user;
+        }
+
+        private void addFriendsTo(User user) {
+            for(User friend : friends){
+                user.addFriend(friend);
+            }
+        }
+
+        private void addTripsTo(User user) {
+            for(Trip trip : trips){
+                user.addTrip(trip);
+            }
+
+        }
+    }
 
     private class TestableTripService extends TripService{
         @Override
